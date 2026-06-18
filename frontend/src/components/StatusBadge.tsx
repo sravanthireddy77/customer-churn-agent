@@ -7,9 +7,9 @@ const labels: Record<TaskStatus, string> = {
 };
 
 const tones: Record<TaskStatus, string> = {
-  open: 'bg-sky-50 text-sky-700 ring-sky-200',
-  in_progress: 'bg-yellow-50 text-yellow-800 ring-yellow-200',
-  completed: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  open: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900 dark:text-sky-300 dark:ring-sky-700',
+  in_progress: 'bg-yellow-50 text-yellow-800 ring-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:ring-yellow-700',
+  completed: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:ring-emerald-700',
 };
 
 export function StatusBadge({ status }: { status: TaskStatus }) {

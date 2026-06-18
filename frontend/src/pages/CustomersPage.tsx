@@ -48,8 +48,8 @@ export function CustomersPage() {
     <div className="space-y-5">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-normal text-slate-950">Customers</h1>
-          <p className="mt-1 text-sm text-slate-500">Monitor customer signals, churn scores, and retention actions.</p>
+          <h1 className="text-2xl font-bold tracking-normal text-slate-950 dark:text-slate-50">Customers</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Monitor customer signals, churn scores, and retention actions.</p>
         </div>
         <Link to="/analyze" className="btn-primary">
           Analyze customer
@@ -59,7 +59,7 @@ export function CustomersPage() {
       <section className="panel p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_180px_180px]">
           <label className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400 dark:text-slate-300" />
             <input
               className="field pl-9"
               value={search}
@@ -108,28 +108,28 @@ export function CustomersPage() {
                   <th className="px-5 py-3">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {rows.map(({ customer, analysis }) => (
                   <tr key={customer.customer_id} className="align-top text-sm">
-                    <td className="px-5 py-4 font-mono text-xs text-slate-600">{customer.customer_id}</td>
+                    <td className="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">{customer.customer_id}</td>
                     <td className="px-5 py-4">
-                      <Link className="font-semibold text-cyan-800 hover:text-cyan-900" to={`/customers/${customer.customer_id}`}>
+                      <Link className="font-semibold text-cyan-800 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200" to={`/customers/${customer.customer_id}`}>
                         {customer.name}
                       </Link>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{customer.domain}</td>
-                    <td className="px-5 py-4 text-slate-600">{customer.plan ?? 'N/A'}</td>
-                    <td className="max-w-xs px-5 py-4 text-slate-600">{customer.recent_usage ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600">{customer.sentiment ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600">{customer.complaints.length}</td>
-                    <td className="px-5 py-4 text-slate-600">{customer.billing_issues.length}</td>
-                    <td className="px-5 py-4 text-slate-600">{customer.support_history.length}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.domain}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.plan ?? 'N/A'}</td>
+                    <td className="max-w-xs px-5 py-4 text-slate-600 dark:text-slate-300">{customer.recent_usage ?? 'N/A'}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.sentiment ?? 'N/A'}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.complaints.length}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.billing_issues.length}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.support_history.length}</td>
                     <td className="px-5 py-4">
                       <RiskBadge score={analysis?.churn_score} />
                     </td>
-                    <td className="max-w-xs px-5 py-4 text-slate-700">{analysis?.root_cause ?? 'Pending analysis'}</td>
-                    <td className="max-w-md px-5 py-4 text-slate-600">{analysis?.recommended_intervention ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600">
+                    <td className="max-w-xs px-5 py-4 text-slate-700 dark:text-slate-300">{analysis?.root_cause ?? 'Pending analysis'}</td>
+                    <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{analysis?.recommended_intervention ?? 'N/A'}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
                       {(analysis?.churn_score ?? 0) > 0.5 ? 'Needs outreach' : 'Monitor'}
                     </td>
                   </tr>

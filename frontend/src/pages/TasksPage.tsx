@@ -31,8 +31,8 @@ export function TasksPage() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-normal text-slate-950">Tasks</h1>
-          <p className="mt-1 text-sm text-slate-500">Retention work queue for follow-up actions.</p>
+          <h1 className="text-2xl font-bold tracking-normal text-slate-950 dark:text-slate-50">Tasks</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Retention work queue for follow-up actions.</p>
         </div>
         <select className="field w-full sm:w-56" value={status} onChange={(event) => setStatus(event.target.value as TaskStatus | 'all')}>
           <option value="all">All statuses</option>
@@ -46,17 +46,17 @@ export function TasksPage() {
         <div className="panel p-5">
           <ListTodo className="h-5 w-5 text-cyan-700" />
           <p className="mt-3 text-2xl font-bold">{(tasksQuery.data ?? []).filter((task) => task.status === 'open').length}</p>
-          <p className="text-sm text-slate-500">Open</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Open</p>
         </div>
         <div className="panel p-5">
           <ListTodo className="h-5 w-5 text-yellow-700" />
           <p className="mt-3 text-2xl font-bold">{(tasksQuery.data ?? []).filter((task) => task.status === 'in_progress').length}</p>
-          <p className="text-sm text-slate-500">In progress</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">In progress</p>
         </div>
         <div className="panel p-5">
           <CheckCircle2 className="h-5 w-5 text-emerald-700" />
           <p className="mt-3 text-2xl font-bold">{(tasksQuery.data ?? []).filter((task) => task.status === 'completed').length}</p>
-          <p className="text-sm text-slate-500">Completed</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Completed</p>
         </div>
       </div>
 
@@ -79,22 +79,22 @@ export function TasksPage() {
                   <th className="px-5 py-3">Update</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {tasks.map((task) => (
                   <tr key={task.task_id} className="align-top text-sm">
                     <td className="max-w-md px-5 py-4">
-                      <p className="font-semibold text-slate-800">{task.title}</p>
-                      <p className="mt-1 text-slate-500">{task.description}</p>
+                      <p className="font-semibold text-slate-800 dark:text-slate-50">{task.title}</p>
+                      <p className="mt-1 text-slate-500 dark:text-slate-400">{task.description}</p>
                     </td>
-                    <td className="px-5 py-4 font-mono text-xs text-slate-600">{task.customer_id}</td>
-                    <td className="px-5 py-4 capitalize text-slate-700">{task.priority}</td>
-                    <td className="px-5 py-4 text-slate-600">
+                    <td className="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">{task.customer_id}</td>
+                    <td className="px-5 py-4 capitalize text-slate-700 dark:text-slate-300">{task.priority}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
                       {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge status={task.status} />
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{task.assigned_to ?? 'Unassigned'}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{task.assigned_to ?? 'Unassigned'}</td>
                     <td className="px-5 py-4">
                       <select
                         className="field min-w-36"

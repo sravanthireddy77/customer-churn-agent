@@ -65,21 +65,21 @@ export function AnalyzePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-normal text-slate-950">Analyze Customer</h1>
-        <p className="mt-1 text-sm text-slate-500">Generate score, reasoning, root cause, and next-best action.</p>
+        <h1 className="text-2xl font-bold tracking-normal text-slate-950 dark:text-slate-50">Analyze Customer</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Generate score, reasoning, root cause, and next-best action.</p>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]">
         <form className="panel grid gap-4 p-5 md:grid-cols-2" onSubmit={submit}>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Customer ID
             <input className="field mt-1" value={form.customer_id} onChange={(event) => setForm({ ...form, customer_id: event.target.value })} required />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Name
             <input className="field mt-1" value={form.name ?? ''} onChange={(event) => setForm({ ...form, name: event.target.value })} />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Domain
             <select className="field mt-1" value={form.domain} onChange={(event) => setForm({ ...form, domain: event.target.value as Domain })}>
               <option value="Telecom">Telecom</option>
@@ -87,31 +87,31 @@ export function AnalyzePage() {
               <option value="SaaS">SaaS</option>
             </select>
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Plan
             <input className="field mt-1" value={form.plan ?? ''} onChange={(event) => setForm({ ...form, plan: event.target.value })} />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Tenure months
             <input className="field mt-1" type="number" min={0} value={form.tenure_months ?? 0} onChange={(event) => setForm({ ...form, tenure_months: Number(event.target.value) })} />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Sentiment
             <input className="field mt-1" value={form.sentiment ?? ''} onChange={(event) => setForm({ ...form, sentiment: event.target.value })} />
           </label>
-          <label className="md:col-span-2 text-sm font-medium text-slate-700">
+          <label className="md:col-span-2 text-sm font-medium text-slate-700 dark:text-slate-200">
             Recent usage
             <input className="field mt-1" value={form.recent_usage ?? ''} onChange={(event) => setForm({ ...form, recent_usage: event.target.value })} />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Complaints
             <textarea className="field mt-1 min-h-28" value={form.complaints} onChange={(event) => setForm({ ...form, complaints: event.target.value })} />
           </label>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Billing issues
             <textarea className="field mt-1 min-h-28" value={form.billing_issues} onChange={(event) => setForm({ ...form, billing_issues: event.target.value })} />
           </label>
-          <label className="md:col-span-2 text-sm font-medium text-slate-700">
+          <label className="md:col-span-2 text-sm font-medium text-slate-700 dark:text-slate-200">
             Support history
             <textarea className="field mt-1 min-h-24" value={form.support_history} onChange={(event) => setForm({ ...form, support_history: event.target.value })} />
           </label>
@@ -126,35 +126,35 @@ export function AnalyzePage() {
         <aside className="space-y-4">
           <section className="panel p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-base font-semibold text-slate-950">Result Summary</h2>
+              <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Result Summary</h2>
               {result && <RiskBadge score={result.churn_score} />}
             </div>
             {result ? (
               <div className="mt-4 space-y-4 text-sm">
                 <div>
-                  <p className="font-semibold text-slate-700">Reasoning</p>
-                  <ol className="mt-2 space-y-2 text-slate-600">
+                  <p className="font-semibold text-slate-700 dark:text-slate-100">Reasoning</p>
+                  <ol className="mt-2 space-y-2 text-slate-600 dark:text-slate-300">
                     {result.reasoning.map((step, index) => (
                       <li key={`${step}-${index}`}>{index + 1}. {step}</li>
                     ))}
                   </ol>
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-700">Root cause</p>
-                  <p className="mt-1 text-slate-600">{result.root_cause}</p>
+                  <p className="font-semibold text-slate-700 dark:text-slate-100">Root cause</p>
+                  <p className="mt-1 text-slate-600 dark:text-slate-300">{result.root_cause}</p>
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-700">Recommended intervention</p>
-                  <p className="mt-1 text-slate-600">{result.recommended_intervention}</p>
+                  <p className="font-semibold text-slate-700 dark:text-slate-100">Recommended intervention</p>
+                  <p className="mt-1 text-slate-600 dark:text-slate-300">{result.recommended_intervention}</p>
                 </div>
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-500">No result yet</p>
+              <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No result yet</p>
             )}
           </section>
 
           <section className="panel p-5">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950">
+            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50">
               <Braces className="h-4 w-4 text-cyan-700" />
               JSON
             </h2>

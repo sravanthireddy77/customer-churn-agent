@@ -45,10 +45,10 @@ function StatCard({
   return (
     <div className="panel p-5">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-slate-500">{title}</p>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
         <Icon className="h-5 w-5 text-cyan-700" />
       </div>
-      <p className="mt-3 text-3xl font-bold tracking-normal text-slate-950">{value}</p>
+      <p className="mt-3 text-3xl font-bold tracking-normal text-slate-950 dark:text-slate-50">{value}</p>
     </div>
   );
 }
@@ -93,8 +93,8 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-normal text-slate-950">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">Retention risk across Telecom, Banking, and SaaS customers.</p>
+        <h1 className="text-2xl font-bold tracking-normal text-slate-950 dark:text-slate-50">Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Retention risk across Telecom, Banking, and SaaS customers.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -107,7 +107,7 @@ export function DashboardPage() {
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="panel p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-950">Churn Distribution</h2>
+            <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Churn Distribution</h2>
           </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -124,7 +124,7 @@ export function DashboardPage() {
 
         <section className="panel p-5">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-slate-950">Root Cause Breakdown</h2>
+            <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Root Cause Breakdown</h2>
           </div>
           {rootCauseData.length === 0 ? (
             <EmptyState title="No churn analyses yet" />
@@ -147,8 +147,8 @@ export function DashboardPage() {
       </div>
 
       <section className="panel overflow-hidden">
-        <div className="border-b border-slate-200 p-5">
-          <h2 className="text-base font-semibold text-slate-950">Recent High-Risk Customers</h2>
+        <div className="border-b border-slate-200 p-5 dark:border-slate-700">
+          <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Recent High-Risk Customers</h2>
         </div>
         {recentHighRisk.length === 0 ? (
           <div className="p-5">
@@ -166,21 +166,21 @@ export function DashboardPage() {
                   <th className="px-5 py-3">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {recentHighRisk.map(({ customer, analysis }) => (
                   <tr key={customer.customer_id} className="text-sm">
                     <td className="px-5 py-4">
-                      <Link className="font-semibold text-cyan-800 hover:text-cyan-900" to={`/customers/${customer.customer_id}`}>
+                      <Link className="font-semibold text-cyan-800 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200" to={`/customers/${customer.customer_id}`}>
                         {customer.name}
                       </Link>
-                      <p className="text-xs text-slate-500">{customer.customer_id}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{customer.customer_id}</p>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{customer.domain}</td>
+                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.domain}</td>
                     <td className="px-5 py-4">
                       <RiskBadge score={analysis?.churn_score} />
                     </td>
-                    <td className="px-5 py-4 text-slate-700">{analysis?.root_cause}</td>
-                    <td className="max-w-md px-5 py-4 text-slate-600">{analysis?.recommended_intervention}</td>
+                    <td className="px-5 py-4 text-slate-700 dark:text-slate-300">{analysis?.root_cause}</td>
+                    <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{analysis?.recommended_intervention}</td>
                   </tr>
                 ))}
               </tbody>

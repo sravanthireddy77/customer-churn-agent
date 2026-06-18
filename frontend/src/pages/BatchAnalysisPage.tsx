@@ -106,8 +106,8 @@ export function BatchAnalysisPage() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-normal text-slate-950">Batch Analysis</h1>
-          <p className="mt-1 text-sm text-slate-500">Run churn analysis across selected customer records.</p>
+          <h1 className="text-2xl font-bold tracking-normal text-slate-950 dark:text-slate-50">Batch Analysis</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Run churn analysis across selected customer records.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <label className="btn-secondary cursor-pointer">
@@ -127,8 +127,8 @@ export function BatchAnalysisPage() {
       </div>
 
       <section className="panel overflow-hidden">
-        <div className="border-b border-slate-200 p-5">
-          <h2 className="text-base font-semibold text-slate-950">Selected Records</h2>
+        <div className="border-b border-slate-200 p-5 dark:border-slate-700">
+          <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Selected Records</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
@@ -141,17 +141,17 @@ export function BatchAnalysisPage() {
                 <th className="px-5 py-3">Signals</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 bg-white">
+            <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
               {rows.map((record) => (
                 <tr key={record.customer_id} className="text-sm">
                   <td className="px-5 py-4">
-                    <p className="font-semibold text-slate-800">{record.name}</p>
-                    <p className="font-mono text-xs text-slate-500">{record.customer_id}</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-50">{record.name}</p>
+                    <p className="font-mono text-xs text-slate-500 dark:text-slate-400">{record.customer_id}</p>
                   </td>
-                  <td className="px-5 py-4 text-slate-600">{record.domain}</td>
-                  <td className="max-w-sm px-5 py-4 text-slate-600">{record.recent_usage}</td>
-                  <td className="px-5 py-4 text-slate-600">{record.sentiment}</td>
-                  <td className="px-5 py-4 text-slate-600">
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{record.domain}</td>
+                  <td className="max-w-sm px-5 py-4 text-slate-600 dark:text-slate-300">{record.recent_usage}</td>
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{record.sentiment}</td>
+                  <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
                     {record.complaints.length + record.billing_issues.length + record.support_history.length}
                   </td>
                 </tr>
@@ -162,11 +162,11 @@ export function BatchAnalysisPage() {
       </section>
 
       <section className="panel overflow-hidden">
-        <div className="border-b border-slate-200 p-5">
-          <h2 className="text-base font-semibold text-slate-950">Batch Results</h2>
+        <div className="border-b border-slate-200 p-5 dark:border-slate-700">
+          <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Batch Results</h2>
         </div>
         {results.length === 0 ? (
-          <p className="p-5 text-sm text-slate-500">No results yet</p>
+          <p className="p-5 text-sm text-slate-500 dark:text-slate-400">No results yet</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
@@ -179,16 +179,16 @@ export function BatchAnalysisPage() {
                   <th className="px-5 py-3">Recommended action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
+              <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
                 {results.map((result) => (
                   <tr key={result.customer_id} className="align-top text-sm">
-                    <td className="px-5 py-4 font-mono text-xs text-slate-600">{result.customer_id}</td>
+                    <td className="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">{result.customer_id}</td>
                     <td className="px-5 py-4">
                       <RiskBadge score={result.churn_score} />
                     </td>
-                    <td className="max-w-md px-5 py-4 text-slate-600">{result.reasoning.join(' ')}</td>
-                    <td className="max-w-xs px-5 py-4 text-slate-700">{result.root_cause}</td>
-                    <td className="max-w-md px-5 py-4 text-slate-600">{result.recommended_intervention}</td>
+                    <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{result.reasoning.join(' ')}</td>
+                    <td className="max-w-xs px-5 py-4 text-slate-700 dark:text-slate-300">{result.root_cause}</td>
+                    <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{result.recommended_intervention}</td>
                   </tr>
                 ))}
               </tbody>

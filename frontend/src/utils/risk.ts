@@ -11,10 +11,10 @@ export function riskLevel(score?: number | null): RiskLevel {
 export function riskTone(score?: number | null): string {
   const level = riskLevel(score);
   return {
-    Low: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    Moderate: 'bg-yellow-50 text-yellow-800 ring-yellow-200',
-    High: 'bg-orange-50 text-orange-800 ring-orange-200',
-    Critical: 'bg-red-50 text-red-700 ring-red-200',
+    Low: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900 dark:text-emerald-300 dark:ring-emerald-700',
+    Moderate: 'bg-yellow-50 text-yellow-800 ring-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:ring-yellow-700',
+    High: 'bg-orange-50 text-orange-800 ring-orange-200 dark:bg-orange-900 dark:text-orange-300 dark:ring-orange-700',
+    Critical: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-900 dark:text-red-300 dark:ring-red-700',
   }[level];
 }
 

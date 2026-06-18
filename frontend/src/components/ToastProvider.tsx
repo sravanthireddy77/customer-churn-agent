@@ -29,9 +29,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => {
           const Icon = toast.kind === 'success' ? CheckCircle2 : XCircle;
           return (
-            <div key={toast.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg">
+            <div key={toast.id} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-3 text-sm shadow-lg dark:border-slate-600 dark:bg-slate-900">
               <Icon className={toast.kind === 'success' ? 'h-5 w-5 text-emerald-600' : 'h-5 w-5 text-red-600'} />
-              <span className="text-slate-700">{toast.message}</span>
+              <span className="text-slate-700 dark:text-slate-100">{toast.message}</span>
             </div>
           );
         })}
