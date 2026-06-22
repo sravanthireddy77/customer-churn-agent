@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const getInitialTheme = (): Theme => {
   if (typeof window === 'undefined') return 'system';
   const stored = localStorage.getItem('theme') as Theme | null;
-  return stored || 'system';
+  return stored || 'light';
 };
 
 const getIsDark = (theme: Theme): boolean => {
