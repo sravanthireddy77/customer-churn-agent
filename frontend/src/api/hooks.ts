@@ -2,6 +2,7 @@
  * API hooks backed by the FastAPI service.
  */
 
+import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from './client';
@@ -150,14 +151,35 @@ export function useTriggerCampaign() {
 
 export function useRunAgent() {
   const queryClient = useQueryClient();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  return useMutation({
-    mutationFn: async (payload: AgentRunRequest) =>
-      (await api.post<AgentRunResponse>('/agent/run', payload)).data,
+  const mutation = useMutation({
+    mutationFn: async (payload: AgentRunRequest) => {
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        return (
+          await api.post<AgentRunResponse>('/agent/run', payload, {
+            signal: controller.signal,
+          })
+        ).data;
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.customers });
       queryClient.invalidateQueries({ queryKey: queryKeys.analyses });
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks() });
     },
   });
+
+  return {
+    ...mutation,
+    cancel: () => abortControllerRef.current?.abort(),
+  };
 }
