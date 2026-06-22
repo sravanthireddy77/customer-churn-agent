@@ -77,3 +77,74 @@ input[type='checkbox'] {
 .agent-pill {
   @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold ring-1;
 }
+
+@keyframes agent-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes agent-scan {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes agent-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(34, 211, 238, 0);
+  }
+}
+
+.agent-enter {
+  animation: agent-fade-up 420ms ease-out both;
+}
+
+.agent-enter-delay-1 {
+  animation-delay: 80ms;
+}
+
+.agent-enter-delay-2 {
+  animation-delay: 160ms;
+}
+
+.agent-enter-delay-3 {
+  animation-delay: 240ms;
+}
+
+.agent-card-motion {
+  @apply transition duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[6px_7px_0_0_rgba(203,213,225,0.95)] dark:hover:shadow-[6px_7px_0_0_rgba(15,23,42,0.95)];
+}
+
+.agent-scan-bar {
+  @apply pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-white/20;
+  animation: agent-scan 2.4s ease-in-out infinite;
+}
+
+.agent-online-pulse {
+  animation: agent-breathe 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-enter,
+  .agent-scan-bar,
+  .agent-online-pulse {
+    animation: none;
+  }
+
+  .agent-card-motion {
+    transform: none;
+  }
+}

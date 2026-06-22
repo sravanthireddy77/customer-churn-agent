@@ -16,7 +16,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { to: '/customers', label: 'Customer 360', icon: Users },
   { to: '/analyze', label: 'Rescue Copilot', icon: Bot },
-  { to: '/', label: 'Campaigns', icon: Crosshair },
+  { to: '/', label: 'AI Rescue Agent', icon: Crosshair },
   { to: '/tasks', label: 'Approvals', icon: ClipboardList },
   { to: '/batch', label: 'Batch Analysis', icon: Layers3 },
 ];
@@ -27,12 +27,12 @@ export function Layout() {
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 bg-[#071d35] text-slate-100 lg:flex lg:flex-col">
         <div className="px-7 pb-8 pt-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400 text-[#071d35]">
+            <div className="agent-online-pulse flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400 text-[#071d35]">
               <Gauge className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-black leading-5">Customer</p>
-              <p className="text-lg font-black leading-5 text-cyan-300">Churn Rescue</p>
+              <p className="text-lg font-black leading-5">Churn Rescue</p>
+              <p className="text-lg font-black leading-5 text-cyan-300">AI Agent</p>
             </div>
           </div>
         </div>
@@ -60,10 +60,10 @@ export function Layout() {
         <div className="px-7 pb-9">
           <div className="rounded-lg border border-white/10 bg-white/5 p-4">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-              <Activity className="h-4 w-4 text-emerald-300" />
+              <Activity className="h-4 w-4 animate-pulse text-emerald-300" />
               Agent online
             </div>
-            <p className="mt-3 text-xs font-bold text-slate-300">AI Agent MVP</p>
+            <p className="mt-3 text-xs font-bold text-slate-300">Churn Rescue AI Agent</p>
             <p className="mt-1 text-xs text-slate-400">Banking / Telecom / SaaS</p>
           </div>
         </div>
@@ -73,12 +73,12 @@ export function Layout() {
         <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:hidden">
           <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#071d35] text-cyan-300">
+              <div className="agent-online-pulse flex h-9 w-9 items-center justify-center rounded-lg bg-[#071d35] text-cyan-300">
                 <Gauge className="h-5 w-5" />
               </div>
               <div>
-                <span className="block text-sm font-black leading-4">Customer</span>
-                <span className="block text-sm font-black leading-4 text-cyan-600">Churn Rescue</span>
+                <span className="block text-sm font-black leading-4">Churn Rescue</span>
+                <span className="block text-sm font-black leading-4 text-cyan-600">AI Agent</span>
               </div>
             </div>
             <ThemeToggle />

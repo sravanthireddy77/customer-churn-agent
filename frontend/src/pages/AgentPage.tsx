@@ -328,11 +328,11 @@ export function AgentPage() {
   return (
     <div className="space-y-6">
       <form className="space-y-6" onSubmit={submit}>
-        <section className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <section className="agent-enter flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <div className="agent-pill bg-blue-50 text-blue-700 ring-blue-100 dark:bg-blue-950 dark:text-blue-200 dark:ring-blue-900">
               <Bot className="h-3.5 w-3.5" />
-              ChurnRescueAgent
+              Churn Rescue AI Agent
             </div>
             <h1 className="mt-3 text-3xl font-black tracking-normal text-slate-950 dark:text-slate-50">
               Rescue Campaign Builder
@@ -385,7 +385,7 @@ export function AgentPage() {
                 type="button"
                 onClick={() => goToWorkflowStep(step.id)}
                 aria-current={isActive ? "step" : undefined}
-                className={`inline-flex min-w-36 shrink-0 items-center justify-center rounded-full px-5 py-2.5 text-sm font-black transition ${
+                className={`relative inline-flex min-w-36 shrink-0 items-center justify-center overflow-hidden rounded-full px-5 py-2.5 text-sm font-black transition hover:-translate-y-0.5 ${
                   isActive
                     ? "bg-orange-500 text-white"
                     : isComplete
@@ -393,7 +393,8 @@ export function AgentPage() {
                       : "bg-slate-300 text-white dark:bg-slate-700 dark:text-slate-300"
                 }`}
               >
-                {step.label}
+                {isActive && <span className="agent-scan-bar" />}
+                <span className="relative">{step.label}</span>
               </button>
             );
           })}
@@ -403,7 +404,7 @@ export function AgentPage() {
           <section
             id="workflow-segment"
             tabIndex={-1}
-            className="panel scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
+            className="panel agent-card-motion agent-enter agent-enter-delay-1 scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -668,7 +669,7 @@ export function AgentPage() {
           <section
             id="workflow-offer"
             tabIndex={-1}
-            className="panel scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
+            className="panel agent-card-motion agent-enter agent-enter-delay-2 scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -762,7 +763,7 @@ export function AgentPage() {
           <section
             id="workflow-message"
             tabIndex={-1}
-            className="panel scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
+            className="panel agent-card-motion agent-enter agent-enter-delay-3 scroll-mt-6 p-6 outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900"
           >
             <div className="flex items-start justify-between gap-3">
               <div>
