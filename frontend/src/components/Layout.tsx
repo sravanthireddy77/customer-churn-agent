@@ -15,7 +15,7 @@ import { ThemeToggle } from './ThemeToggle';
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { to: '/customers', label: 'Customer 360', icon: Users },
-  { to: '/analyze', label: 'AI Copilot', icon: Bot },
+  { to: '/analyze', label: 'Risk Analyzer', icon: Bot },
   { to: '/', label: 'Campaigns', icon: Crosshair },
   { to: '/tasks', label: 'Approvals', icon: ClipboardList },
   { to: '/batch', label: 'Batch Analysis', icon: Layers3 },

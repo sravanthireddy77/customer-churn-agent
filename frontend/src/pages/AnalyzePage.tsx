@@ -117,8 +117,20 @@ export function AnalyzePage() {
           </label>
           <div className="md:col-span-2 flex justify-end">
             <button className="btn-primary" disabled={analyzeMutation.isPending}>
-              <Sparkles className="h-4 w-4" />
-              Analyze churn
+              {analyzeMutation.isPending ? (
+                <>
+                  <span className="relative flex h-5 w-5 items-center justify-center">
+                    <span className="absolute h-5 w-5 animate-ping rounded-full bg-white/35" />
+                    <Sparkles className="relative h-4 w-4 animate-pulse" />
+                  </span>
+                  Analyzing churn...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Analyze churn
+                </>
+              )}
             </button>
           </div>
         </form>
