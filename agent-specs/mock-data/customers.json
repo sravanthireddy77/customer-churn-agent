@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "name": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "last_login_days": 18,
+    "usage_trend": "down 60%",
+    "issue_type": "low_usage",
+    "plan_type": "Pro",
+    "risk_level": "HIGH",
+    "suggested_action": "Send tutorial or onboarding guide",
+    "status": "Pending",
+    "ai_message": "Hi Rahul, we noticed you have not been active lately. Many users find our quick tutorials helpful to get more value. Would you like a short walkthrough to get started again?"
+  },
+  {
+    "id": 2,
+    "name": "Priya Verma",
+    "email": "priya@example.com",
+    "last_login_days": 5,
+    "usage_trend": "stable",
+    "issue_type": "none",
+    "plan_type": "Basic",
+    "risk_level": "LOW",
+    "suggested_action": "Send engagement tips",
+    "status": "Healthy",
+    "ai_message": "Hi Priya, thanks for staying active. Here are a few quick tips to help you get even more value from your current plan."
+  },
+  {
+    "id": 3,
+    "name": "Amit Patel",
+    "email": "amit@example.com",
+    "last_login_days": 12,
+    "usage_trend": "down 40%",
+    "issue_type": "feature_confusion",
+    "plan_type": "Pro",
+    "risk_level": "MEDIUM",
+    "suggested_action": "Offer demo call",
+    "status": "Pending",
+    "ai_message": "Hi Amit, we noticed your usage has reduced recently. If any feature feels unclear, we would be happy to walk you through it in a quick demo."
+  },
+  {
+    "id": 4,
+    "name": "Neha Gupta",
+    "email": "neha@example.com",
+    "last_login_days": 25,
+    "usage_trend": "down 70%",
+    "issue_type": "pricing",
+    "plan_type": "Premium",
+    "risk_level": "HIGH",
+    "suggested_action": "Provide discount or plan downgrade option",
+    "status": "Pending",
+    "ai_message": "Hi Neha, we understand pricing can be an important factor. We can help review your current plan and suggest a better-fit option. Would you like to discuss this?"
+  },
+  {
+    "id": 5,
+    "name": "Karan Mehta",
+    "email": "karan@example.com",
+    "last_login_days": 10,
+    "usage_trend": "down 30%",
+    "issue_type": "technical_issue",
+    "plan_type": "Basic",
+    "risk_level": "MEDIUM",
+    "suggested_action": "Assign support agent immediately",
+    "status": "Pending",
+    "ai_message": "Hi Karan, we noticed there may be a technical issue affecting your experience. Our support team can help resolve it quickly. Would you like us to assist?"
+  }
+]

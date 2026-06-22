@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Braces, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 import { useAnalyzeCustomer } from '../api/hooks';
 import { RiskBadge } from '../components/RiskBadge';
@@ -151,16 +151,6 @@ export function AnalyzePage() {
             ) : (
               <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No result yet</p>
             )}
-          </section>
-
-          <section className="panel p-5">
-            <h2 className="flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50">
-              <Braces className="h-4 w-4 text-cyan-700" />
-              JSON
-            </h2>
-            <pre className="mt-4 max-h-[420px] overflow-auto rounded-lg bg-slate-950 p-4 text-xs leading-5 text-slate-100">
-              {result ? JSON.stringify(result, null, 2) : '{}'}
-            </pre>
           </section>
         </aside>
       </div>

@@ -10,6 +10,8 @@ from app.schemas.agent import (
     AgentCustomerOutcome,
     AgentRunRequest,
     AgentRunResponse,
+    DomainRiskCustomer,
+    DomainRiskSummary,
     RiskLevel,
 )
 from app.schemas.campaign import CampaignEventRead, CampaignTriggerRequest
@@ -137,16 +139,19 @@ class ChurnRescueOrchestrator:
 
         outcomes.sort(key=lambda outcome: outcome.analysis.churn_score, reverse=True)
         reasoning_trace.append(self._ranking_reasoning(outcomes))
+        domain_risk_summary = self._domain_risk_summary(outcomes)
+        reasoning_trace.append(self._domain_risk_reasoning(domain_risk_summary))
         return AgentRunResponse(
             status="completed",
             goal=request.goal,
             reasoning_trace=reasoning_trace,
             customer_outcomes=outcomes,
+            domain_risk_summary=domain_risk_summary,
             actions=actions,
             created_tasks=created_tasks,
             campaign_events=campaign_events,
-            summary=self._summary(outcomes, created_tasks, campaign_events),
-            next_steps=self._next_steps(outcomes, request),
+            summary=self._summary(outcomes, domain_risk_summary, created_tasks, campaign_events),
+            next_steps=self._next_steps(outcomes, domain_risk_summary, request),
         )
 
     def _select_customers(self, request: AgentRunRequest) -> list[Customer]:
@@ -175,26 +180,92 @@ class ChurnRescueOrchestrator:
             f"at {top.analysis.churn_score:.2f} due to {top.analysis.root_cause.lower()}."
         )
 
+    def _domain_risk_summary(self, outcomes: list[AgentCustomerOutcome]) -> list[DomainRiskSummary]:
+        domain_order: dict[str, int] = {"Telecom": 0, "Banking": 1, "SaaS": 2}
+        summaries: list[DomainRiskSummary] = []
+        domains = sorted({outcome.domain for outcome in outcomes}, key=lambda domain: domain_order[domain])
+
+        for domain in domains:
+            domain_outcomes = [outcome for outcome in outcomes if outcome.domain == domain]
+            at_risk_outcomes = [
+                outcome for outcome in domain_outcomes if outcome.risk_level in {"high", "critical"}
+            ]
+            at_risk_customers = [
+                DomainRiskCustomer(
+                    customer_id=outcome.customer_id,
+                    name=outcome.name,
+                    risk_level=outcome.risk_level,
+                    churn_score=outcome.analysis.churn_score,
+                    root_cause=outcome.analysis.root_cause,
+                    recommended_intervention=outcome.analysis.recommended_intervention,
+                )
+                for outcome in at_risk_outcomes
+            ]
+            average_score = round(
+                sum(outcome.analysis.churn_score for outcome in domain_outcomes) / len(domain_outcomes),
+                2,
+            )
+
+            summaries.append(
+                DomainRiskSummary(
+                    domain=domain,  # type: ignore[arg-type]
+                    customers_analyzed=len(domain_outcomes),
+                    at_risk_count=len(at_risk_customers),
+                    critical_count=sum(
+                        1 for outcome in domain_outcomes if outcome.risk_level == "critical"
+                    ),
+                    high_count=sum(1 for outcome in domain_outcomes if outcome.risk_level == "high"),
+                    average_churn_score=average_score,
+                    top_risk_customer=at_risk_customers[0] if at_risk_customers else None,
+                    at_risk_customers=at_risk_customers,
+                )
+            )
+
+        return summaries
+
+    def _domain_risk_reasoning(self, summaries: list[DomainRiskSummary]) -> str:
+        if not summaries:
+            return "No domain-level at-risk user summary could be produced."
+        at_risk_domains = [summary for summary in summaries if summary.at_risk_count]
+        if not at_risk_domains:
+            return "Grouped analyzed users by domain; no high or critical at-risk users were identified."
+        highest_domain = max(at_risk_domains, key=lambda summary: summary.at_risk_count)
+        return (
+            "Grouped analyzed users by domain using high and critical churn scores as the at-risk threshold; "
+            f"{highest_domain.domain} currently has the most at-risk users "
+            f"({highest_domain.at_risk_count})."
+        )
+
     def _summary(
         self,
         outcomes: list[AgentCustomerOutcome],
+        domain_risk_summary: list[DomainRiskSummary],
         created_tasks: list[TaskRead],
         campaign_events: list[CampaignEventRead],
     ) -> str:
         critical = sum(1 for outcome in outcomes if outcome.risk_level == "critical")
         high = sum(1 for outcome in outcomes if outcome.risk_level == "high")
+        domains_with_risk = sum(1 for summary in domain_risk_summary if summary.at_risk_count)
         return (
             f"Analyzed {len(outcomes)} customers. Found {critical} critical and {high} high-risk customers. "
+            f"At-risk users appear in {domains_with_risk} domains. "
             f"Created {len(created_tasks)} follow-up tasks and prepared {len(campaign_events)} outreach events."
         )
 
-    def _next_steps(self, outcomes: list[AgentCustomerOutcome], request: AgentRunRequest) -> list[str]:
+    def _next_steps(
+        self,
+        outcomes: list[AgentCustomerOutcome],
+        domain_risk_summary: list[DomainRiskSummary],
+        request: AgentRunRequest,
+    ) -> list[str]:
         if not outcomes:
             return ["Add or import customer records, then run the agent again."]
         steps = [
             "Review the reasoning for each high-risk customer before outreach.",
             "Prioritize critical-risk customers for same-day retention follow-up.",
         ]
+        if any(summary.at_risk_count for summary in domain_risk_summary):
+            steps.append("Use the domain risk summary to coordinate owners for each at-risk customer group.")
         if not request.create_tasks:
             steps.append("Enable task creation on the next run to convert recommendations into work items.")
         if not request.trigger_campaigns:

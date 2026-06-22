@@ -16,6 +16,7 @@ def capabilities() -> dict:
         "mode": "agentic_orchestration",
         "can_analyze_customers": True,
         "can_rank_risk": True,
+        "can_identify_at_risk_users_by_domain": True,
         "can_create_tasks": True,
         "can_trigger_campaigns": True,
         "reasoning_policy": "Reasoning is returned before conclusions and recommendations.",

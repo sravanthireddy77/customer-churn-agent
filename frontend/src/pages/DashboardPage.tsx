@@ -4,7 +4,6 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -22,6 +21,11 @@ import { ChurnAnalysisRecord, Customer } from '../types';
 import { formatPercent, riskLevel } from '../utils/risk';
 
 const pieColors = ['#0891b2', '#f59e0b', '#f97316', '#dc2626', '#64748b', '#10b981'];
+
+type RootCauseDatum = {
+  name: string;
+  value: number;
+};
 
 function latestByCustomer(analyses: ChurnAnalysisRecord[]) {
   return analyses.reduce<Record<string, ChurnAnalysisRecord>>((acc, analysis) => {
@@ -50,6 +54,25 @@ function StatCard({
       </div>
       <p className="mt-3 text-3xl font-bold tracking-normal text-slate-950 dark:text-slate-50">{value}</p>
     </div>
+  );
+}
+
+function RootCauseLegend({ data }: { data: RootCauseDatum[] }) {
+  return (
+    <ul className="grid min-w-0 gap-2 sm:grid-cols-2 2xl:grid-cols-1">
+      {data.map((entry, index) => (
+        <li key={entry.name} className="flex min-w-0 items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+          <span
+            className="mt-1 h-3 w-3 shrink-0 rounded-sm"
+            style={{ backgroundColor: pieColors[index % pieColors.length] }}
+          />
+          <span className="min-w-0 flex-1 break-words leading-5">{entry.name}</span>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+            {entry.value}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -83,7 +106,7 @@ export function DashboardPage() {
     acc[analysis.root_cause] = (acc[analysis.root_cause] ?? 0) + 1;
     return acc;
   }, {});
-  const rootCauseData = Object.entries(rootCauses).map(([name, value]) => ({ name, value }));
+  const rootCauseData: RootCauseDatum[] = Object.entries(rootCauses).map(([name, value]) => ({ name, value }));
 
   const recentHighRisk = enriched
     .filter((row) => row.analysis && row.analysis.churn_score > 0.5)
@@ -105,16 +128,16 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <section className="panel p-5">
+        <section className="panel min-w-0 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Churn Distribution</h2>
           </div>
-          <div className="h-72">
+          <div className="h-72 min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={distribution}>
+              <BarChart data={distribution} margin={{ top: 8, right: 12, bottom: 0, left: -16 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={10} />
+                <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={36} />
                 <Tooltip />
                 <Bar dataKey="customers" radius={[6, 6, 0, 0]} fill="#0891b2" />
               </BarChart>
@@ -122,25 +145,34 @@ export function DashboardPage() {
           </div>
         </section>
 
-        <section className="panel p-5">
+        <section className="panel min-w-0 p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-slate-950 dark:text-slate-50">Root Cause Breakdown</h2>
           </div>
           {rootCauseData.length === 0 ? (
             <EmptyState title="No churn analyses yet" />
           ) : (
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={rootCauseData} dataKey="value" nameKey="name" outerRadius={88} label>
-                    {rootCauseData.map((entry, index) => (
-                      <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="grid min-w-0 gap-4 2xl:grid-cols-[240px_minmax(0,1fr)] 2xl:items-center">
+              <div className="h-56 min-w-0 sm:h-64 2xl:h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                    <Pie
+                      data={rootCauseData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius="48%"
+                      outerRadius="78%"
+                      paddingAngle={2}
+                    >
+                      {rootCauseData.map((entry, index) => (
+                        <Cell key={entry.name} fill={pieColors[index % pieColors.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <RootCauseLegend data={rootCauseData} />
             </div>
           )}
         </section>

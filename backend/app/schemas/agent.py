@@ -43,12 +43,33 @@ class AgentCustomerOutcome(BaseModel):
     action_summary: str
 
 
+class DomainRiskCustomer(BaseModel):
+    customer_id: str
+    name: str
+    risk_level: RiskLevel
+    churn_score: float = Field(..., ge=0, le=1)
+    root_cause: str
+    recommended_intervention: str
+
+
+class DomainRiskSummary(BaseModel):
+    domain: Domain
+    customers_analyzed: int
+    at_risk_count: int
+    critical_count: int
+    high_count: int
+    average_churn_score: float = Field(..., ge=0, le=1)
+    top_risk_customer: DomainRiskCustomer | None
+    at_risk_customers: list[DomainRiskCustomer]
+
+
 class AgentRunResponse(BaseModel):
     run_id: str = Field(default_factory=lambda: f"RUN-{uuid4().hex[:10].upper()}")
     status: Literal["completed"]
     goal: str
     reasoning_trace: list[str]
     customer_outcomes: list[AgentCustomerOutcome]
+    domain_risk_summary: list[DomainRiskSummary]
     actions: list[AgentAction]
     created_tasks: list[TaskRead]
     campaign_events: list[CampaignEventRead]
