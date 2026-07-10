@@ -12,6 +12,7 @@ os.environ.setdefault("AUTO_CREATE_TABLES", "true")
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:////tmp/churn_rescue.db")
 
 from app.main import app
+from mangum import Mangum
 
-# Vercel serverless function handler
-handler = app
+# Vercel serverless function handler with Mangum adapter for ASGI
+handler = Mangum(app, lifespan="off")
