@@ -3,6 +3,9 @@ import os
 from pathlib import Path
 import traceback
 
+# Initialize handler as None
+handler = None
+
 try:
     # Add backend directory to Python path
     backend_path = Path(__file__).parent.parent / "backend"
