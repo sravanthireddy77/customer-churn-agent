@@ -1,8 +1,9 @@
+# Define a placeholder handler first before any imports
+handler = None
+
 import sys
 import os
 from pathlib import Path
-
-# Test with minimal FastAPI app first
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from mangum import Mangum
@@ -18,7 +19,7 @@ def test_endpoint():
 def health():
     return JSONResponse({"status": "ok"})
 
-# Default to test app
+# Set handler to test app
 handler = Mangum(test_app, lifespan="off")
 
 # Try to import the full app
