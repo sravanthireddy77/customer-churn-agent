@@ -101,10 +101,97 @@ def get_tasks():
 
 @app.post("/api/agent/run")
 def run_agent():
+    """Mock agent run endpoint that returns properly structured response"""
+    import uuid
+    
     return JSONResponse({
-        "status": "info",
-        "message": "Full backend is not loaded yet. Using minimal mock API.",
-        "backend": "minimal"
+        "run_id": str(uuid.uuid4()),
+        "status": "completed",
+        "goal": "Identify at-risk customers and trigger retention actions",
+        "reasoning_trace": [
+            "Analyzing customer base for churn signals",
+            "Evaluating usage patterns and sentiment scores",
+            "Prioritizing high-risk customers",
+            "Creating retention tasks for account managers"
+        ],
+        "customer_outcomes": [
+            {
+                "customer_id": "CUST-001",
+                "name": "Acme Corp",
+                "domain": "SaaS",
+                "risk_level": "high",
+                "analysis": {
+                    "customer_id": "CUST-001",
+                    "churn_score": 75.0,
+                    "reasoning": [
+                        "Usage declining over past 3 months",
+                        "Multiple support tickets with slow resolution",
+                        "Negative sentiment in recent interactions"
+                    ],
+                    "root_cause": "declining_usage",
+                    "recommended_intervention": "Schedule account review call with customer success team",
+                    "follow_up_task": "Contact within 48 hours"
+                },
+                "action_summary": "Created high-priority follow-up task and scheduled retention email"
+            }
+        ],
+        "domain_risk_summary": [
+            {
+                "domain": "SaaS",
+                "customers_analyzed": 2,
+                "at_risk_count": 1,
+                "critical_count": 0,
+                "high_count": 1,
+                "average_churn_score": 37.5,
+                "top_risk_customer": {
+                    "customer_id": "CUST-001",
+                    "name": "Acme Corp",
+                    "risk_level": "high",
+                    "churn_score": 75.0,
+                    "root_cause": "declining_usage",
+                    "recommended_intervention": "Schedule account review call"
+                },
+                "at_risk_customers": [
+                    {
+                        "customer_id": "CUST-001",
+                        "name": "Acme Corp",
+                        "risk_level": "high",
+                        "churn_score": 75.0,
+                        "root_cause": "declining_usage",
+                        "recommended_intervention": "Schedule account review call"
+                    }
+                ]
+            }
+        ],
+        "actions": [
+            {
+                "action_type": "analyze_customer",
+                "customer_id": "CUST-001",
+                "status": "completed",
+                "detail": "Analyzed churn risk - Score: 75%"
+            },
+            {
+                "action_type": "create_task",
+                "customer_id": "CUST-001",
+                "status": "simulated",
+                "detail": "Created follow-up task: Contact within 48 hours"
+            },
+            {
+                "action_type": "trigger_campaign",
+                "customer_id": "CUST-001",
+                "status": "simulated",
+                "detail": "Triggered retention email campaign"
+            }
+        ],
+        "created_tasks": [],
+        "campaign_events": [],
+        "summary": "Analyzed 2 customers across 1 domain. Identified 1 high-risk customer requiring immediate attention. Mock API - full backend not loaded.",
+        "next_steps": [
+            "Review and approve follow-up tasks for high-risk customers",
+            "Monitor campaign engagement metrics",
+            "Schedule account review calls",
+            "Note: This is demo data from the minimal API"
+        ]
     })
 
 # Try to import the full backend app
