@@ -13,11 +13,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:////tmp/churn_rescue.db")
 
 # Import app after setting environment variables
 from app.main import app
+from mangum import Mangum
 
-try:
-    from mangum import Mangum
-    # Vercel serverless function handler with Mangum adapter for ASGI
-    handler = Mangum(app, lifespan="off")
-except ImportError:
-    # Fallback if Mangum is not available
-    handler = app
+# Create Mangum handler for AWS Lambda/Vercel
+handler = Mangum(app, lifespan="off")
