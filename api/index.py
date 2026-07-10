@@ -11,8 +11,13 @@ os.environ.setdefault("ENVIRONMENT", "production")
 os.environ.setdefault("AUTO_CREATE_TABLES", "true")
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:////tmp/churn_rescue.db")
 
+# Import app after setting environment variables
 from app.main import app
-from mangum import Mangum
 
-# Vercel serverless function handler with Mangum adapter for ASGI
-handler = Mangum(app, lifespan="off")
+try:
+    from mangum import Mangum
+    # Vercel serverless function handler with Mangum adapter for ASGI
+    handler = Mangum(app, lifespan="off")
+except ImportError:
+    # Fallback if Mangum is not available
+    handler = app

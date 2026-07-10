@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from contextlib import asynccontextmanager
 
@@ -19,15 +20,16 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if settings.auto_create_tables:
-        Base.metadata.create_all(bind=engine)
-        # Auto-seed database in production if empty
-        if settings.environment == "production":
-            try:
+        try:
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created")
+            # Only seed if explicitly requested via environment variable
+            if settings.environment == "production" and os.getenv("SEED_DATABASE") == "true":
                 from app.db.seed import seed
                 seed()
                 logger.info("Database seeded with sample data")
-            except Exception as e:
-                logger.warning(f"Database seeding skipped or failed: {e}")
+        except Exception as e:
+            logger.warning(f"Database initialization error: {e}")
     yield
 
 
