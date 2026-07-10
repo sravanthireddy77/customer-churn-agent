@@ -12,41 +12,52 @@ app = FastAPI()
 mock_customers = [
     {
         "id": 1,
+        "customer_id": "CUST-001",
         "name": "Acme Corp",
-        "email": "contact@acme.com",
-        "industry": "Technology",
-        "signup_date": (datetime.now() - timedelta(days=365)).isoformat(),
-        "last_interaction": (datetime.now() - timedelta(days=5)).isoformat(),
-        "support_tickets": 3,
-        "usage_trend": "declining",
-        "sentiment_score": 6.5,
-        "payment_delays": 0
+        "domain": "Technology",
+        "plan": "Enterprise",
+        "tenure_months": 24,
+        "recent_usage": "declining",
+        "sentiment": "negative",
+        "complaints": ["Slow support response", "Missing features"],
+        "billing_issues": [],
+        "support_history": ["Ticket #123", "Ticket #456"],
+        "metadata": {},
+        "created_at": (datetime.now() - timedelta(days=730)).isoformat(),
+        "updated_at": datetime.now().isoformat()
     },
     {
         "id": 2,
+        "customer_id": "CUST-002",
         "name": "Beta Inc",
-        "email": "info@beta.com",
-        "industry": "Finance",
-        "signup_date": (datetime.now() - timedelta(days=200)).isoformat(),
-        "last_interaction": (datetime.now() - timedelta(days=2)).isoformat(),
-        "support_tickets": 1,
-        "usage_trend": "stable",
-        "sentiment_score": 8.0,
-        "payment_delays": 0
+        "domain": "Finance",
+        "plan": "Professional",
+        "tenure_months": 12,
+        "recent_usage": "stable",
+        "sentiment": "positive",
+        "complaints": [],
+        "billing_issues": [],
+        "support_history": ["Ticket #789"],
+        "metadata": {},
+        "created_at": (datetime.now() - timedelta(days=365)).isoformat(),
+        "updated_at": datetime.now().isoformat()
     }
 ]
 
 mock_analyses = [
     {
         "id": 1,
-        "customer_id": 1,
-        "customer_name": "Acme Corp",
-        "churn_probability": 0.75,
-        "risk_level": "high",
-        "health_score": 45,
-        "created_at": datetime.now().isoformat(),
-        "root_causes": ["declining_usage", "support_issues"],
-        "sentiment": "negative"
+        "customer_id": "CUST-001",
+        "churn_score": 75.0,
+        "reasoning": [
+            "Usage declining over past 3 months",
+            "Multiple support tickets with slow resolution",
+            "Negative sentiment in recent interactions"
+        ],
+        "root_cause": "declining_usage",
+        "recommended_intervention": "Schedule account review call with customer success team",
+        "follow_up_task": "Contact within 48 hours",
+        "created_at": datetime.now().isoformat()
     }
 ]
 
