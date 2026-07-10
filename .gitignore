@@ -12,3 +12,4 @@ build/
 .venv/
 venv/
 postgres_data/
+.vercel
