@@ -11,13 +11,22 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { AlertTriangle, CheckSquare, Gauge, Users } from 'lucide-react';
+import { AlertTriangle, CheckSquare, Gauge, MessageSquareWarning, SearchCheck, Users } from 'lucide-react';
 
 import { useAnalyses, useCustomers, useTasks } from '../api/hooks';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { RiskBadge } from '../components/RiskBadge';
 import { ChurnAnalysisRecord, Customer } from '../types';
+import {
+  activeRootCauseCount,
+  customerHealthScore,
+  getEarlyWarnings,
+  getRootCauseFactors,
+  overallSentiment,
+  SentimentLabel,
+  warningSeverityRank,
+} from '../utils/featureInsights';
 import { formatPercent, riskLevel } from '../utils/risk';
 
 const pieColors = ['#0891b2', '#f59e0b', '#f97316', '#dc2626', '#64748b', '#10b981'];
@@ -95,9 +104,26 @@ export function DashboardPage() {
     scored.length > 0
       ? scored.reduce((sum, row) => sum + row.analysis.churn_score, 0) / scored.length
       : 0;
+  const averageHealth =
+    scored.length > 0
+      ? scored.reduce((sum, row) => sum + (customerHealthScore(row.analysis.churn_score) ?? 0), 0) /
+        scored.length
+      : 0;
   const openTasks = tasks.filter((task) => task.status !== 'completed').length;
+  const warningCount = enriched.reduce(
+    (sum, row) => sum + getEarlyWarnings(row.customer, row.analysis).length,
+    0,
+  );
+  const criticalWarningCount = enriched.reduce(
+    (sum, row) =>
+      sum +
+      getEarlyWarnings(row.customer, row.analysis).filter(
+        (warning) => warningSeverityRank(warning.severity) >= warningSeverityRank('critical'),
+      ).length,
+    0,
+  );
 
-  const distribution = ['Low', 'Moderate', 'High', 'Critical'].map((level) => ({
+  const distribution = ['Low', 'Medium', 'High', 'Critical'].map((level) => ({
     name: level,
     customers: scored.filter((row) => riskLevel(row.analysis.churn_score) === level).length,
   }));
@@ -107,6 +133,30 @@ export function DashboardPage() {
     return acc;
   }, {});
   const rootCauseData: RootCauseDatum[] = Object.entries(rootCauses).map(([name, value]) => ({ name, value }));
+  const rootCauseCategoryData = Object.entries(
+    enriched.reduce<Record<string, number>>((acc, row) => {
+      getRootCauseFactors(row.customer, row.analysis)
+        .filter((factor) => factor.active)
+        .forEach((factor) => {
+          acc[factor.label] = (acc[factor.label] ?? 0) + 1;
+        });
+      return acc;
+    }, {}),
+  )
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 4);
+  const activeRootCauseSignals = enriched.reduce(
+    (sum, row) => sum + activeRootCauseCount(row.customer, row.analysis),
+    0,
+  );
+  const sentimentOrder: SentimentLabel[] = ['Positive', 'Neutral', 'Negative', 'Escalation required'];
+  const sentimentCounts = sentimentOrder.map((status) => ({
+    status,
+    value: enriched.filter((row) => overallSentiment(row.customer) === status).length,
+  }));
+  const needsEscalation = sentimentCounts.find((entry) => entry.status === 'Escalation required')?.value ?? 0;
+  const negativeSentiment = sentimentCounts.find((entry) => entry.status === 'Negative')?.value ?? 0;
 
   const recentHighRisk = enriched
     .filter((row) => row.analysis && row.analysis.churn_score > 0.5)
@@ -126,6 +176,104 @@ export function DashboardPage() {
         <StatCard title="Average churn score" value={formatPercent(average)} icon={Gauge} />
         <StatCard title="Open follow-up tasks" value={openTasks} icon={CheckSquare} />
       </div>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        <div className="panel p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="agent-label">Core Features</p>
+              <h2 className="mt-1 text-base font-semibold text-slate-950 dark:text-slate-50">
+                Churn Prediction Engine
+              </h2>
+            </div>
+            <Gauge className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Average probability</p>
+              <p className="mt-1 text-2xl font-black text-slate-950 dark:text-slate-50">
+                {formatPercent(average)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Avg health score</p>
+              <p className="mt-1 text-2xl font-black text-slate-950 dark:text-slate-50">
+                {Math.round(averageHealth)}
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 text-sm dark:border-slate-700">
+            <span className="font-medium text-slate-600 dark:text-slate-300">Early warning alerts</span>
+            <span className="font-black text-orange-700 dark:text-orange-300">{warningCount}</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between text-sm">
+            <span className="font-medium text-slate-600 dark:text-slate-300">Critical alerts</span>
+            <span className="font-black text-red-700 dark:text-red-300">{criticalWarningCount}</span>
+          </div>
+        </div>
+
+        <div className="panel p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="agent-label">Core Features</p>
+              <h2 className="mt-1 text-base font-semibold text-slate-950 dark:text-slate-50">
+                Root Cause Analysis
+              </h2>
+            </div>
+            <SearchCheck className="h-5 w-5 text-blue-700 dark:text-blue-300" />
+          </div>
+          <p className="mt-5 text-2xl font-black text-slate-950 dark:text-slate-50">
+            {activeRootCauseSignals}
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
+            active churn driver signals across all industries
+          </p>
+          <div className="mt-5 space-y-3">
+            {rootCauseCategoryData.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">No active root-cause categories yet.</p>
+            ) : (
+              rootCauseCategoryData.map((entry) => (
+                <div key={entry.name} className="flex items-center justify-between gap-3 text-sm">
+                  <span className="font-medium text-slate-700 dark:text-slate-200">{entry.name}</span>
+                  <span className="font-black text-blue-700 dark:text-blue-300">{entry.value}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="panel p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="agent-label">Core Features</p>
+              <h2 className="mt-1 text-base font-semibold text-slate-950 dark:text-slate-50">
+                Customer Sentiment Analysis
+              </h2>
+            </div>
+            <MessageSquareWarning className="h-5 w-5 text-emerald-700 dark:text-emerald-300" />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Negative</p>
+              <p className="mt-1 text-2xl font-black text-orange-700 dark:text-orange-300">
+                {negativeSentiment}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 dark:text-slate-400">Escalation required</p>
+              <p className="mt-1 text-2xl font-black text-red-700 dark:text-red-300">{needsEscalation}</p>
+            </div>
+          </div>
+          <div className="mt-5 space-y-3">
+            {sentimentCounts.map((entry) => (
+              <div key={entry.status} className="flex items-center justify-between gap-3 text-sm">
+                <span className="font-medium text-slate-700 dark:text-slate-200">{entry.status}</span>
+                <span className="font-black text-slate-900 dark:text-slate-50">{entry.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-4 xl:grid-cols-2">
         <section className="panel min-w-0 p-5">

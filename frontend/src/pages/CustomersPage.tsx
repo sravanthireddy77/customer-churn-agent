@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { RiskBadge } from '../components/RiskBadge';
 import { ChurnAnalysisRecord, Domain, RiskLevel } from '../types';
+import { customerHealthScore, getEarlyWarnings, overallSentiment } from '../utils/featureInsights';
 import { riskLevel } from '../utils/risk';
 
 function latestByCustomer(analyses: ChurnAnalysisRecord[]) {
@@ -76,7 +77,7 @@ export function CustomersPage() {
           <select className="field" value={risk} onChange={(event) => setRisk(event.target.value as RiskLevel | 'all')}>
             <option value="all">All risk levels</option>
             <option value="Low">Low</option>
-            <option value="Moderate">Moderate</option>
+            <option value="Medium">Medium</option>
             <option value="High">High</option>
             <option value="Critical">Critical</option>
           </select>
@@ -99,41 +100,61 @@ export function CustomersPage() {
                   <th className="px-5 py-3">Plan</th>
                   <th className="px-5 py-3">Recent usage</th>
                   <th className="px-5 py-3">Sentiment</th>
+                  <th className="px-5 py-3">Sentiment output</th>
                   <th className="px-5 py-3">Complaints</th>
                   <th className="px-5 py-3">Billing</th>
                   <th className="px-5 py-3">Support</th>
-                  <th className="px-5 py-3">Churn score</th>
+                  <th className="px-5 py-3">Churn probability</th>
+                  <th className="px-5 py-3">Health score</th>
+                  <th className="px-5 py-3">Early warnings</th>
                   <th className="px-5 py-3">Root cause</th>
                   <th className="px-5 py-3">Recommended action</th>
                   <th className="px-5 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-700 dark:bg-slate-900">
-                {rows.map(({ customer, analysis }) => (
-                  <tr key={customer.customer_id} className="align-top text-sm">
-                    <td className="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">{customer.customer_id}</td>
-                    <td className="px-5 py-4">
-                      <Link className="font-semibold text-cyan-800 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200" to={`/customers/${customer.customer_id}`}>
-                        {customer.name}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.domain}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.plan ?? 'N/A'}</td>
-                    <td className="max-w-xs px-5 py-4 text-slate-600 dark:text-slate-300">{customer.recent_usage ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.sentiment ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.complaints.length}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.billing_issues.length}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.support_history.length}</td>
-                    <td className="px-5 py-4">
-                      <RiskBadge score={analysis?.churn_score} />
-                    </td>
-                    <td className="max-w-xs px-5 py-4 text-slate-700 dark:text-slate-300">{analysis?.root_cause ?? 'Pending analysis'}</td>
-                    <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{analysis?.recommended_intervention ?? 'N/A'}</td>
-                    <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
-                      {(analysis?.churn_score ?? 0) > 0.5 ? 'Needs outreach' : 'Monitor'}
-                    </td>
-                  </tr>
-                ))}
+                {rows.map(({ customer, analysis }) => {
+                  const warnings = getEarlyWarnings(customer, analysis);
+                  const sentimentOutput = overallSentiment(customer);
+                  const healthScore = customerHealthScore(analysis?.churn_score);
+
+                  return (
+                    <tr key={customer.customer_id} className="align-top text-sm">
+                      <td className="px-5 py-4 font-mono text-xs text-slate-600 dark:text-slate-300">{customer.customer_id}</td>
+                      <td className="px-5 py-4">
+                        <Link className="font-semibold text-cyan-800 hover:text-cyan-900 dark:text-cyan-300 dark:hover:text-cyan-200" to={`/customers/${customer.customer_id}`}>
+                          {customer.name}
+                        </Link>
+                      </td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.domain}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.plan ?? 'N/A'}</td>
+                      <td className="max-w-xs px-5 py-4 text-slate-600 dark:text-slate-300">{customer.recent_usage ?? 'N/A'}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.sentiment ?? 'N/A'}</td>
+                      <td className="px-5 py-4 font-semibold text-slate-700 dark:text-slate-200">{sentimentOutput}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.complaints.length}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.billing_issues.length}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">{customer.support_history.length}</td>
+                      <td className="px-5 py-4">
+                        <RiskBadge score={analysis?.churn_score} />
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-slate-700 dark:text-slate-200">
+                        {healthScore ?? 'N/A'}
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-orange-700 dark:text-orange-300">
+                        {warnings.length}
+                      </td>
+                      <td className="max-w-xs px-5 py-4 text-slate-700 dark:text-slate-300">{analysis?.root_cause ?? 'Pending analysis'}</td>
+                      <td className="max-w-md px-5 py-4 text-slate-600 dark:text-slate-300">{analysis?.recommended_intervention ?? 'N/A'}</td>
+                      <td className="px-5 py-4 text-slate-600 dark:text-slate-300">
+                        {sentimentOutput === 'Escalation required'
+                          ? 'Escalate'
+                          : (analysis?.churn_score ?? 0) > 0.5
+                            ? 'Needs outreach'
+                            : 'Monitor'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

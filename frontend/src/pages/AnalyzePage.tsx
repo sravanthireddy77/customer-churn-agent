@@ -2,9 +2,15 @@ import { FormEvent, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 
 import { useAnalyzeCustomer } from '../api/hooks';
+import {
+  PredictionEnginePanel,
+  RootCauseAnalysisPanel,
+  SentimentAnalysisPanel,
+} from '../components/CoreFeaturePanels';
 import { RiskBadge } from '../components/RiskBadge';
 import { useToast } from '../components/ToastProvider';
 import { ChurnAnalysis, CustomerSignalInput, Domain } from '../types';
+import { toSignalCustomer } from '../utils/featureInsights';
 
 const sample: CustomerSignalInput = {
   customer_id: 'TEL-7824A',
@@ -35,6 +41,7 @@ export function AnalyzePage() {
   const { showToast } = useToast();
   const analyzeMutation = useAnalyzeCustomer();
   const [result, setResult] = useState<ChurnAnalysis | null>(null);
+  const [submittedCustomer, setSubmittedCustomer] = useState<CustomerSignalInput>(sample);
   const [form, setForm] = useState({
     ...sample,
     complaints: toLines(sample.complaints),
@@ -58,9 +65,12 @@ export function AnalyzePage() {
       metadata: {},
     };
     const analysis = await analyzeMutation.mutateAsync(payload);
+    setSubmittedCustomer(payload);
     setResult(analysis);
     showToast('Churn analysis completed');
   };
+
+  const featureCustomer = toSignalCustomer(submittedCustomer);
 
   return (
     <div className="space-y-6">
@@ -166,6 +176,13 @@ export function AnalyzePage() {
           </section>
         </aside>
       </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <PredictionEnginePanel customer={featureCustomer} analysis={result} />
+        <RootCauseAnalysisPanel customer={featureCustomer} analysis={result} />
+      </div>
+
+      <SentimentAnalysisPanel customer={featureCustomer} />
     </div>
   );
 }

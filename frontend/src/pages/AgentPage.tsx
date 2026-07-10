@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -9,9 +9,12 @@ import {
   FileCheck2,
   MailPlus,
   MessageSquareText,
+  Mic,
+  MicOff,
   Play,
   RotateCcw,
   Search,
+  SearchCheck,
   Send,
   ShieldCheck,
   Sparkles,
@@ -23,13 +26,19 @@ import {
   Zap,
 } from "lucide-react";
 
-import { useCustomers, useRunAgent } from "../api/hooks";
+import { useAnalyses, useCustomers, useRunAgent } from "../api/hooks";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { RiskBadge } from "../components/RiskBadge";
 import { useToast } from "../components/ToastProvider";
-import { AgentRunResponse, Domain } from "../types";
-import { formatPercent, riskBar } from "../utils/risk";
+import { AgentRunResponse, ChurnAnalysisRecord, Customer, Domain } from "../types";
+import {
+  customerHealthScore,
+  getEarlyWarnings,
+  getRootCauseFactors,
+  overallSentiment,
+} from "../utils/featureInsights";
+import { formatPercent, riskBar, riskLevel } from "../utils/risk";
 
 const defaultGoal =
   "Find customers most likely to churn, explain the signals, recommend rescue actions, and prepare follow-up work for the retention team.";
@@ -57,6 +66,75 @@ const workflowSectionIds: Record<number, string> = {
   4: "workflow-message",
   5: "workflow-approval",
 };
+
+const searchStopWords = new Set([
+  "a",
+  "an",
+  "and",
+  "are",
+  "customer",
+  "customers",
+  "find",
+  "for",
+  "give",
+  "me",
+  "of",
+  "risk",
+  "show",
+  "the",
+  "with",
+]);
+
+type SpeechRecognitionResultLike = {
+  0?: { transcript?: string };
+};
+
+type SpeechRecognitionEventLike = {
+  results: {
+    length: number;
+    [index: number]: SpeechRecognitionResultLike;
+  };
+};
+
+type SpeechRecognitionLike = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onend: (() => void) | null;
+  onerror: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onstart: (() => void) | null;
+  abort: () => void;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: SpeechRecognitionConstructor;
+  webkitSpeechRecognition?: SpeechRecognitionConstructor;
+};
+
+type AnalysisSearchResult = {
+  customer: Customer;
+  analysis?: ChurnAnalysisRecord;
+  healthScore: number | null;
+  matchLabels: string[];
+  matchScore: number;
+};
+
+type SearchScope = "risk" | "rootCause" | "sentiment" | "warnings";
+
+const searchScopes: Array<{
+  id: SearchScope;
+  label: string;
+}> = [
+  { id: "risk", label: "Risk categories" },
+  { id: "rootCause", label: "Root-cause analysis" },
+  { id: "sentiment", label: "Sentiment signals" },
+  { id: "warnings", label: "Early warnings" },
+];
 
 function actionTone(status: string) {
   if (status === "completed" || status === "queued")
@@ -87,6 +165,205 @@ function StopRunIcon() {
 
 function campaignLabel(value: string) {
   return campaignTypes.find((type) => type.value === value)?.label ?? value;
+}
+
+function latestByCustomer(analyses: ChurnAnalysisRecord[]) {
+  return analyses.reduce<Record<string, ChurnAnalysisRecord>>((acc, analysis) => {
+    const existing = acc[analysis.customer_id];
+    if (!existing || new Date(analysis.created_at) > new Date(existing.created_at)) {
+      acc[analysis.customer_id] = analysis;
+    }
+    return acc;
+  }, {});
+}
+
+function queryTerms(query: string) {
+  return query
+    .toLowerCase()
+    .split(/[^a-z0-9$%.-]+/)
+    .map((term) => term.trim())
+    .filter((term) => term.length > 1 && !searchStopWords.has(term));
+}
+
+function domainsFromQuery(query: string): Domain[] {
+  const domains: Domain[] = [];
+  if (/\b(bank|banks|banking|financial|finance)\b/.test(query)) domains.push("Banking");
+  if (/\b(telecom|telco|mobile|wireless)\b/.test(query)) domains.push("Telecom");
+  if (/\b(saas|software|subscription)\b/.test(query)) domains.push("SaaS");
+  return domains;
+}
+
+function removeDomainTerms(terms: string[]) {
+  const domainTerms = new Set([
+    "bank",
+    "banks",
+    "banking",
+    "financial",
+    "finance",
+    "telecom",
+    "telco",
+    "mobile",
+    "wireless",
+    "saas",
+    "software",
+    "subscription",
+  ]);
+  return terms.filter((term) => !domainTerms.has(term));
+}
+
+function includesAny(text: string, terms: string[]) {
+  return terms.some((term) => text.includes(term));
+}
+
+function buildAnalysisSearchResults(
+  query: string,
+  customers: Customer[],
+  analyses: Record<string, ChurnAnalysisRecord>,
+  activeScopes: SearchScope[],
+): AnalysisSearchResult[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  const terms = queryTerms(normalizedQuery);
+  if ((!normalizedQuery || terms.length === 0) && activeScopes.length === 0) return [];
+  const domainFilters = domainsFromQuery(normalizedQuery);
+  const searchTerms = domainFilters.length ? removeDomainTerms(terms) : terms;
+  const searchableCustomers = domainFilters.length
+    ? customers.filter((customer) => domainFilters.includes(customer.domain))
+    : customers;
+  const scopes = activeScopes.length
+    ? activeScopes
+    : (["risk", "rootCause", "sentiment", "warnings"] satisfies SearchScope[]);
+
+  return searchableCustomers
+    .map((customer) => {
+      const analysis = analyses[customer.customer_id];
+      const warnings = getEarlyWarnings(customer, analysis);
+      const rootCauseFactors = getRootCauseFactors(customer, analysis).filter((factor) => factor.active);
+      const sentiment = overallSentiment(customer);
+      const risk = riskLevel(analysis?.churn_score);
+      const healthScore = customerHealthScore(analysis?.churn_score);
+      const baseText = [
+        customer.customer_id,
+        customer.name,
+        customer.domain,
+        customer.plan ?? "",
+        customer.recent_usage ?? "",
+      ].join(" ");
+      const riskText = [
+        `${risk} risk`,
+        formatPercent(analysis?.churn_score),
+        healthScore !== null ? `${healthScore} health score` : "",
+      ].join(" ");
+      const rootCauseText = [
+        sentiment,
+        analysis?.root_cause ?? "",
+        analysis?.recommended_intervention ?? "",
+        ...(analysis?.reasoning ?? []),
+        ...rootCauseFactors.flatMap((factor) => [factor.label, factor.evidence]),
+      ].join(" ");
+      const sentimentText = [
+        sentiment,
+        customer.sentiment ?? "",
+        customer.complaints.join(" "),
+        customer.support_history.join(" "),
+      ].join(" ");
+      const warningText = [
+        ...warnings.flatMap((warning) => [warning.title, warning.detail, warning.severity]),
+      ].join(" ");
+      const scopedText: Record<SearchScope, string> = {
+        risk: riskText,
+        rootCause: rootCauseText,
+        sentiment: sentimentText,
+        warnings: warningText,
+      };
+      const searchable = [
+        baseText,
+        ...scopes.map((scope) => scopedText[scope]),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      let matchScore =
+        searchTerms.length > 0
+          ? searchTerms.reduce((score, term) => score + (searchable.includes(term) ? 1 : 0), 0)
+          : 0;
+      const matchLabels: string[] = [];
+
+      if (includesAny(customer.domain.toLowerCase(), terms)) {
+        if (searchTerms.length === 0) {
+          matchScore += 2;
+        }
+        matchLabels.push(customer.domain);
+      }
+
+      if (scopes.includes("risk") && searchTerms.includes("critical") && risk === "Critical") {
+        matchScore += 4;
+        matchLabels.push("Critical Risk");
+      } else if (scopes.includes("risk") && searchTerms.includes("high") && risk === "High") {
+        matchScore += 4;
+        matchLabels.push("High Risk");
+      } else if (scopes.includes("risk") && searchTerms.includes("medium") && risk === "Medium") {
+        matchScore += 3;
+        matchLabels.push("Medium Risk");
+      } else if (scopes.includes("risk") && searchTerms.includes("low") && risk === "Low") {
+        matchScore += 3;
+        matchLabels.push("Low Risk");
+      } else if (scopes.includes("risk") && includesAny(`${risk} risk`.toLowerCase(), searchTerms)) {
+        matchScore += 2;
+        matchLabels.push(`${risk} Risk`);
+      }
+
+      if (scopes.includes("sentiment") && includesAny(sentiment.toLowerCase(), searchTerms)) {
+        matchScore += 2;
+        matchLabels.push(sentiment);
+      }
+
+      if (scopes.includes("rootCause")) {
+        rootCauseFactors.forEach((factor) => {
+          if (searchTerms.length === 0 || includesAny(`${factor.label} ${factor.evidence}`.toLowerCase(), searchTerms)) {
+            matchScore += searchTerms.length === 0 ? 1 : 2;
+            matchLabels.push(factor.label);
+          }
+        });
+      }
+
+      if (scopes.includes("warnings")) {
+        warnings.forEach((warning) => {
+          if (searchTerms.length === 0 || includesAny(`${warning.title} ${warning.detail} ${warning.severity}`.toLowerCase(), searchTerms)) {
+            matchScore += warning.severity === "critical" ? 3 : 2;
+            matchLabels.push(warning.title);
+          }
+        });
+      }
+
+      if (scopes.includes("rootCause") && analysis && includesAny(`${analysis.root_cause} ${analysis.recommended_intervention}`.toLowerCase(), searchTerms)) {
+        matchScore += 2;
+        matchLabels.push("Analysis match");
+      }
+
+      if (searchTerms.length === 0 && scopes.includes("risk") && analysis) {
+        matchScore += analysis.churn_score > 0.75 ? 4 : analysis.churn_score > 0.5 ? 3 : 1;
+        matchLabels.push(`${risk} Risk`);
+      }
+
+      if (searchTerms.length === 0 && scopes.includes("sentiment") && sentiment !== "Neutral") {
+        matchScore += sentiment === "Escalation required" ? 4 : 2;
+        matchLabels.push(sentiment);
+      }
+
+      return {
+        customer,
+        analysis,
+        healthScore,
+        matchLabels: Array.from(new Set(matchLabels)).slice(0, 5),
+        matchScore,
+      };
+    })
+    .filter((result) => result.matchScore > 0)
+    .sort((a, b) => {
+      if (b.matchScore !== a.matchScore) return b.matchScore - a.matchScore;
+      return (b.analysis?.churn_score ?? 0) - (a.analysis?.churn_score ?? 0);
+    })
+    .slice(0, 6);
 }
 
 function buildOfferPackage(
@@ -165,7 +442,9 @@ function buildMessageDraft(
 export function AgentPage() {
   const { showToast } = useToast();
   const customersQuery = useCustomers();
+  const analysesQuery = useAnalyses();
   const runAgent = useRunAgent();
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const [goal, setGoal] = useState(defaultGoal);
   const [domain, setDomain] = useState<Domain | "all">("all");
   const [maxCustomers, setMaxCustomers] = useState(10);
@@ -180,9 +459,16 @@ export function AgentPage() {
   const [messageVariant, setMessageVariant] = useState(1);
   const [approvalSubmitted, setApprovalSubmitted] = useState(false);
   const [previewAudience, setPreviewAudience] = useState(false);
+  const [analysisSearchQuery, setAnalysisSearchQuery] = useState("");
+  const [activeSearchScopes, setActiveSearchScopes] = useState<SearchScope[]>([]);
+  const [isListening, setIsListening] = useState(false);
   const [result, setResult] = useState<AgentRunResponse | null>(null);
 
   const customers = customersQuery.data ?? [];
+  const analysisMap = useMemo(
+    () => latestByCustomer(analysesQuery.data ?? []),
+    [analysesQuery.data],
+  );
   const scopedCustomers = useMemo(
     () =>
       customers.filter(
@@ -233,6 +519,17 @@ export function AgentPage() {
     : selectedIds.length > 0 || domain !== "all"
       ? { label: "High", width: "78%" }
       : { label: "Strong", width: "70%" };
+  const analysisSearchResults = useMemo(
+    () => buildAnalysisSearchResults(analysisSearchQuery, customers, analysisMap, activeSearchScopes),
+    [activeSearchScopes, analysisMap, analysisSearchQuery, customers],
+  );
+  const shouldShowSearchResults = analysisSearchQuery.trim().length > 0 || activeSearchScopes.length > 0;
+
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+    };
+  }, []);
 
   const toggleCustomer = (customerId: string) => {
     setSelectedIds((current) =>
@@ -287,6 +584,8 @@ export function AgentPage() {
     setMessageVariant(1);
     setApprovalSubmitted(false);
     setPreviewAudience(false);
+    setAnalysisSearchQuery("");
+    setActiveSearchScopes([]);
     setResult(null);
     showToast("Agent query cleared");
   };
@@ -310,6 +609,83 @@ export function AgentPage() {
         .map((customer) => customer.customer_id),
     );
     setActiveStep(1);
+  };
+
+  const selectSearchResult = (customerId: string) => {
+    setSelectedIds((current) =>
+      current.includes(customerId) ? current : [...current, customerId],
+    );
+    setActiveStep(1);
+    showToast("Customer added to rescue scope");
+  };
+
+  const selectAllSearchResults = () => {
+    if (analysisSearchResults.length === 0) return;
+    setSelectedIds((current) =>
+      Array.from(
+        new Set([
+          ...current,
+          ...analysisSearchResults.map((searchResult) => searchResult.customer.customer_id),
+        ]),
+      ),
+    );
+    setActiveStep(1);
+    showToast("Search results added to rescue scope");
+  };
+
+  const startVoiceSearch = () => {
+    const SpeechRecognition =
+      (window as SpeechWindow).SpeechRecognition ??
+      (window as SpeechWindow).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      showToast("Voice search is not supported in this browser");
+      return;
+    }
+
+    recognitionRef.current?.abort();
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      showToast("Voice search could not hear a query");
+    };
+    recognition.onresult = (event) => {
+      const transcript = Array.from({ length: event.results.length }, (_, index) =>
+        event.results[index]?.[0]?.transcript?.trim() ?? "",
+      )
+        .filter(Boolean)
+        .join(" ");
+
+      if (transcript) {
+        setAnalysisSearchQuery(transcript);
+        showToast("Voice query captured");
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopVoiceSearch = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  };
+
+  const toggleSearchScope = (scope: SearchScope) => {
+    setActiveSearchScopes((current) =>
+      current.includes(scope)
+        ? current.filter((item) => item !== scope)
+        : [...current, scope],
+    );
+  };
+
+  const clearSearchScopes = () => {
+    setActiveSearchScopes([]);
   };
 
   const goToWorkflowStep = (stepId: number) => {
@@ -398,6 +774,197 @@ export function AgentPage() {
               </button>
             );
           })}
+        </section>
+
+        <section className="panel agent-enter p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <div className="agent-pill bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900">
+                <SearchCheck className="h-3.5 w-3.5" />
+                Risk & Analysis Search
+              </div>
+              <h2 className="mt-3 text-lg font-black text-slate-950 dark:text-slate-50">
+                Ask for customers by risk, root cause, or sentiment
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary w-full sm:w-auto"
+              onClick={selectAllSearchResults}
+              disabled={analysisSearchResults.length === 0}
+            >
+              <Target className="h-4 w-4" />
+              Select Matches
+            </button>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 lg:flex-row">
+            <label className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-4 top-3.5 h-4 w-4 text-slate-400" />
+              <input
+                className="field field-icon py-3 pr-4"
+                value={analysisSearchQuery}
+                onChange={(event) => setAnalysisSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.preventDefault();
+                }}
+                placeholder="Try: critical banking customers with billing disputes"
+              />
+            </label>
+            <button
+              type="button"
+              className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                isListening
+                  ? "bg-red-600 hover:bg-red-700"
+                  : "bg-emerald-600 hover:bg-emerald-700"
+              }`}
+              onClick={isListening ? stopVoiceSearch : startVoiceSearch}
+            >
+              {isListening ? (
+                <>
+                  <MicOff className="h-4 w-4" />
+                  Stop voice
+                </>
+              ) : (
+                <>
+                  <Mic className="h-4 w-4" />
+                  Voice search
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
+            {searchScopes.map((scope) => {
+              const isActive = activeSearchScopes.includes(scope.id);
+
+              return (
+                <button
+                  key={scope.id}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => toggleSearchScope(scope.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 transition ${
+                    isActive
+                      ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/20"
+                      : "bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {isActive && <Check className="h-3.5 w-3.5" />}
+                  {scope.label}
+                </button>
+              );
+            })}
+            {activeSearchScopes.length > 0 && (
+              <button
+                type="button"
+                onClick={clearSearchScopes}
+                className="rounded-full px-3 py-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {shouldShowSearchResults && (
+            <div className="mt-5">
+              {analysesQuery.isLoading ? (
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                  Loading latest churn analyses...
+                </p>
+              ) : analysisSearchResults.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-slate-300 p-5 text-sm font-medium text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                  No matches found for the selected query and signal filters.
+                </div>
+              ) : (
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {analysisSearchResults.map((searchResult) => {
+                    const { customer, analysis, healthScore, matchLabels } = searchResult;
+                    const warnings = getEarlyWarnings(customer, analysis);
+                    const activeRootCauses = getRootCauseFactors(customer, analysis).filter(
+                      (factor) => factor.active,
+                    );
+
+                    return (
+                      <article
+                        key={customer.customer_id}
+                        className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-950 dark:text-slate-50">
+                              {customer.name}
+                            </p>
+                            <p className="mt-1 text-xs font-mono text-slate-500 dark:text-slate-400">
+                              {customer.customer_id} / {customer.domain}
+                            </p>
+                          </div>
+                          <RiskBadge score={analysis?.churn_score} />
+                        </div>
+
+                        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+                          <div>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                              Health
+                            </p>
+                            <p className="mt-1 font-black text-slate-900 dark:text-slate-50">
+                              {healthScore ?? "N/A"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                              Sentiment
+                            </p>
+                            <p className="mt-1 font-black text-slate-900 dark:text-slate-50">
+                              {overallSentiment(customer)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                              Alerts
+                            </p>
+                            <p className="mt-1 font-black text-orange-700 dark:text-orange-300">
+                              {warnings.length}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {(matchLabels.length ? matchLabels : activeRootCauses.map((factor) => factor.label).slice(0, 3)).map((label) => (
+                            <span
+                              key={label}
+                              className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+
+                        <p className="mt-4 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                          {analysis?.root_cause ?? "Pending churn analysis"}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
+                          {analysis?.recommended_intervention ??
+                            "Run the agent to generate reasoning and an intervention."}
+                        </p>
+
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            className="btn-primary px-3 py-2"
+                            onClick={() => selectSearchResult(customer.customer_id)}
+                          >
+                            <Check className="h-4 w-4" />
+                            Add to scope
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <div className="grid gap-6 min-[1400px]:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)_minmax(0,0.9fr)]">

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export type Domain = 'Telecom' | 'Banking' | 'SaaS';
-export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Critical';
+export type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';
 export type AgentRiskLevel = 'low' | 'moderate' | 'high' | 'critical';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TaskStatus = 'open' | 'in_progress' | 'completed';

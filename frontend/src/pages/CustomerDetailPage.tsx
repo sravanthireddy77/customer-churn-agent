@@ -9,6 +9,11 @@ import {
   useTasks,
   useTriggerCampaign,
 } from '../api/hooks';
+import {
+  PredictionEnginePanel,
+  RootCauseAnalysisPanel,
+  SentimentAnalysisPanel,
+} from '../components/CoreFeaturePanels';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { RiskBadge } from '../components/RiskBadge';
@@ -169,6 +174,13 @@ export function CustomerDetailPage() {
           )}
         </section>
       </div>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <PredictionEnginePanel customer={customer} analysis={analysis} />
+        <RootCauseAnalysisPanel customer={customer} analysis={analysis} />
+      </div>
+
+      <SentimentAnalysisPanel customer={customer} />
 
       <section className="panel overflow-hidden">
         <div className="border-b border-slate-200 p-5 dark:border-slate-700">
