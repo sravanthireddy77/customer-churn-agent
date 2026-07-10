@@ -73,6 +73,17 @@ def get_customer(customer_id: int):
 def get_churn_analyses():
     return JSONResponse(mock_analyses)
 
+@app.get("/api/churn/results")
+def get_churn_results():
+    return JSONResponse(mock_analyses)
+
+@app.get("/api/churn/results/{customer_id}")
+def get_churn_result(customer_id: int):
+    analysis = next((a for a in mock_analyses if a["customer_id"] == customer_id), None)
+    if analysis:
+        return JSONResponse(analysis)
+    return JSONResponse({"error": "Analysis not found"}, status_code=404)
+
 @app.get("/api/tasks")
 def get_tasks():
     return JSONResponse([])
