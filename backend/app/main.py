@@ -19,7 +19,8 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    if settings.auto_create_tables:
+    # Skip lifespan initialization in serverless environments
+    if settings.auto_create_tables and os.getenv("VERCEL") != "1":
         try:
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables created")
@@ -33,13 +34,22 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(
-    title=settings.app_name,
-    version="0.1.0",
-    docs_url=f"{settings.api_prefix}/docs",
-    openapi_url=f"{settings.api_prefix}/openapi.json",
-    lifespan=lifespan,
-)
+# For Vercel serverless, skip lifespan completely
+if os.getenv("VERCEL") == "1":
+    app = FastAPI(
+        title=settings.app_name,
+        version="0.1.0",
+        docs_url=f"{settings.api_prefix}/docs",
+        openapi_url=f"{settings.api_prefix}/openapi.json",
+    )
+else:
+    app = FastAPI(
+        title=settings.app_name,
+        version="0.1.0",
+        docs_url=f"{settings.api_prefix}/docs",
+        openapi_url=f"{settings.api_prefix}/openapi.json",
+        lifespan=lifespan,
+    )
 
 app.add_middleware(
     CORSMiddleware,
