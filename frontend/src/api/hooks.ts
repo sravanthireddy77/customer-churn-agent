@@ -32,7 +32,15 @@ export const queryKeys = {
 export function useCustomers() {
   return useQuery({
     queryKey: queryKeys.customers,
-    queryFn: async () => (await api.get<Customer[]>('/customers')).data,
+    queryFn: async () => {
+      try {
+        const response = await api.get<Customer[]>('/customers');
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error('Failed to fetch customers:', error);
+        return [];
+      }
+    },
     staleTime: 1000 * 60,
   });
 }
@@ -49,7 +57,15 @@ export function useCustomer(customerId?: string | null) {
 export function useAnalyses() {
   return useQuery({
     queryKey: queryKeys.analyses,
-    queryFn: async () => (await api.get<ChurnAnalysisRecord[]>('/churn/results')).data,
+    queryFn: async () => {
+      try {
+        const response = await api.get<ChurnAnalysisRecord[]>('/churn/results');
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error('Failed to fetch analyses:', error);
+        return [];
+      }
+    },
     staleTime: 1000 * 30,
   });
 }
@@ -97,12 +113,17 @@ export function useAnalyzeBatch() {
 export function useTasks(customerId?: string | null) {
   return useQuery({
     queryKey: queryKeys.tasks(customerId),
-    queryFn: async () =>
-      (
-        await api.get<Task[]>('/tasks', {
+    queryFn: async () => {
+      try {
+        const response = await api.get<Task[]>('/tasks', {
           params: customerId ? { customer_id: customerId } : undefined,
-        })
-      ).data,
+        });
+        return Array.isArray(response.data) ? response.data : [];
+      } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+        return [];
+      }
+    },
     staleTime: 1000 * 30,
   });
 }

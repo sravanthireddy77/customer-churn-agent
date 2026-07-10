@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import agent, campaigns, churn, customers, health, tasks
+from app.api.routes import agent, campaigns, churn, customers, health, tasks, seed
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.core.rate_limit import InMemoryRateLimitMiddleware
@@ -20,6 +20,14 @@ settings = get_settings()
 async def lifespan(_: FastAPI):
     if settings.auto_create_tables:
         Base.metadata.create_all(bind=engine)
+        # Auto-seed database in production if empty
+        if settings.environment == "production":
+            try:
+                from app.db.seed import seed
+                seed()
+                logger.info("Database seeded with sample data")
+            except Exception as e:
+                logger.warning(f"Database seeding skipped or failed: {e}")
     yield
 
 
@@ -62,6 +70,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 app.include_router(health.router, prefix=settings.api_prefix)
+app.include_router(seed.router, prefix=settings.api_prefix)
 app.include_router(agent.router, prefix=settings.api_prefix)
 app.include_router(customers.router, prefix=settings.api_prefix)
 app.include_router(churn.router, prefix=settings.api_prefix)
