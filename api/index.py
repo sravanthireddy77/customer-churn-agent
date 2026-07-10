@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from mangum import Mangum
 
-# Create a minimal test app
+# Create a minimal test app as fallback
 test_app = FastAPI()
 
 @test_app.get("/api/test")
@@ -18,7 +18,10 @@ def test_endpoint():
 def health():
     return JSONResponse({"status": "ok"})
 
-# Try to import the full app, fallback to test app if it fails
+# Default to test app
+handler = Mangum(test_app, lifespan="off")
+
+# Try to import the full app
 try:
     # Add backend directory to Python path
     backend_path = Path(__file__).parent.parent / "backend"
@@ -32,10 +35,10 @@ try:
 
     # Import app after setting environment variables
     from app.main import app
+    # Replace handler with full app if import succeeds
     handler = Mangum(app, lifespan="off")
+    print("Successfully loaded full backend app", file=sys.stderr)
 except Exception as e:
-    print(f"Failed to import main app: {e}", file=sys.stderr)
+    print(f"Failed to import main app, using test app: {e}", file=sys.stderr)
     import traceback
     traceback.print_exc(file=sys.stderr)
-    # Use test app as fallback
-    handler = Mangum(test_app, lifespan="off")
