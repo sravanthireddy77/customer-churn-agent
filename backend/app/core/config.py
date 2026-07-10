@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     database_url: str = "sqlite+pysqlite:///./churn_rescue.db"
     redis_url: str = "redis://localhost:6379/0"
-    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000,https://*.vercel.app"
     rate_limit_requests: int = 120
     rate_limit_window_seconds: int = 60
 
